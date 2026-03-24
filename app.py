@@ -259,8 +259,10 @@ def get_gemini_model():
         api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
     if not api_key:
+        st.error("No Gemini API key found.")
         return None
 
+    st.write("Key loaded:", api_key[:6], "...", api_key[-4:])  # temporary debug
     genai.configure(api_key=api_key)
     return genai.GenerativeModel("gemini-2.5-flash")
 
