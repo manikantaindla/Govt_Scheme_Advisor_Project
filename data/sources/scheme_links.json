@@ -1,0 +1,45 @@
+[
+  {
+    "scheme_id": "ap_ntr_bharosa_ssp",
+    "scheme_name": "AP Social Security Pensions (NTR Bharosa)",
+    "state": "Andhra Pradesh",
+    "apply_link": "https://gsws-nbm.ap.gov.in/NBM/Home/Main",
+    "source_links": [
+      "https://sspensions.ap.gov.in/",
+      "https://sspensions.ap.gov.in/SSP/Documents/GO%20MS%2043%2013.06.2024.pdf"
+    ],
+    "office_note": "If online application is not available for your case, visit GSWS / village or ward secretariat.",
+    "doc_ids": [
+      "GO MS 43 13.06.2024"
+    ],
+    "file_names": [
+      "GO MS 43 13.06.2024.pdf"
+    ]
+  },
+  {
+    "scheme_id": "tel_kalyana_lakshmi",
+    "scheme_name": "Kalyana Lakshmi / Shaadi Mubarak",
+    "state": "Telangana",
+    "apply_link": "https://telanganaepass.cgg.gov.in/KalyanaLakshmiLinks.jsp",
+    "source_links": [
+      "https://telanganaepass.cgg.gov.in/KalyanLakshmi.do",
+      "https://wdsc.telangana.gov.in/PwD/GOs/GO.Ms.No.04%20PwD%20Kalyana%20Lashmi%20Pathakam.PDF"
+    ],
+    "office_note": "If portal support is unavailable, visit MeeSeva or the concerned welfare office.",
+    "doc_ids": [],
+    "file_names": []
+  },
+  {
+    "scheme_id": "tel_aasara_pension",
+    "scheme_name": "Aasara Pensions",
+    "state": "Telangana",
+    "apply_link": "https://www.cheyutha.telangana.gov.in/SSPTG/UserInterface/Portal/GeneralSearch.aspx",
+    "source_links": [
+      "https://medak.telangana.gov.in/scheme/aasara-pensions/",
+      "https://services.india.gov.in/service/detail/telangana-aasara-pensions-undersociety-for-elimination-of-rural-poverty-details-of-the-beneficiariess"
+    ],
+    "office_note": "If online application is not available for your case, visit MeeSeva / municipal / mandal office.",
+    "doc_ids": [],
+    "file_names": []
+  }
+]

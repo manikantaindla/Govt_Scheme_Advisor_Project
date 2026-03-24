@@ -1,0 +1,10 @@
+streamlit
+python-dotenv
+pypdf
+pandas
+pyarrow
+google-generativeai
+ddgs
+numpy
+requests
+scikit-learn
