@@ -209,11 +209,9 @@ def format_output(text: str) -> str:
     if not text:
         return ""
 
-    # Normalize spaces
     text = text.replace("\r", "\n")
     text = re.sub(r"\s+", " ", text)
 
-    # Define keys
     keys = [
         "Scheme Name:",
         "Description:",
@@ -224,7 +222,6 @@ def format_output(text: str) -> str:
         "Possible Scheme:",
     ]
 
-    # Force proper line breaks BEFORE each key
     for key in keys:
         text = re.sub(
             rf"\s*{re.escape(key)}\s*",
@@ -233,10 +230,9 @@ def format_output(text: str) -> str:
             flags=re.IGNORECASE
         )
 
-    # Clean extra spaces/newlines
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
-
     return text
+
 
 def make_links_clickable(text: str) -> str:
     if not text:
@@ -251,6 +247,108 @@ def make_links_clickable(text: str) -> str:
     return re.sub(url_pattern, repl, text)
 
 
+def parse_answer_sections(text: str) -> Dict[str, str]:
+    keys = [
+        "Scheme Name",
+        "Description",
+        "Who can apply",
+        "How to apply",
+        "Official Notice Link",
+        "Official Apply Link",
+        "Possible Scheme",
+    ]
+
+    sections = {key: "Not clearly available" for key in keys}
+    if not text:
+        return sections
+
+    normalized = format_output(text)
+
+    pattern = r"(Scheme Name|Description|Who can apply|How to apply|Official Notice Link|Official Apply Link|Possible Scheme):\s*\n(.*?)(?=\n(?:Scheme Name|Description|Who can apply|How to apply|Official Notice Link|Official Apply Link|Possible Scheme):|\Z)"
+    matches = re.findall(pattern, normalized, flags=re.DOTALL | re.IGNORECASE)
+
+    for key, value in matches:
+        proper_key = next((k for k in keys if k.lower() == key.lower()), key)
+        clean_value = value.strip()
+        if clean_value:
+            sections[proper_key] = clean_value
+
+    return sections
+
+
+def render_answer_card(answer_text: str):
+    sections = parse_answer_sections(answer_text)
+
+    scheme_name = sections.get("Scheme Name", "Not clearly available")
+    description = sections.get("Description", "Not clearly available")
+    who_can_apply = sections.get("Who can apply", "Not clearly available")
+    how_to_apply = sections.get("How to apply", "Not clearly available")
+    notice_link = make_links_clickable(sections.get("Official Notice Link", "Not clearly available"))
+    apply_link = make_links_clickable(sections.get("Official Apply Link", "Not clearly available"))
+
+    st.markdown(
+        f"""
+        <div class="result-card">
+            <div class="result-badge">Scheme Result</div>
+            <div class="result-title">{scheme_name}</div>
+            <div class="result-description">{make_links_clickable(description)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <div class="info-card-title">Who can apply</div>
+                <div class="info-card-value">{who_can_apply}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col2:
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <div class="info-card-title">How to apply</div>
+                <div class="info-card-value">{make_links_clickable(how_to_apply)}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.markdown(
+            f"""
+            <div class="link-card">
+                <div class="info-card-title">Official Notice Link</div>
+                <div class="info-card-value">{notice_link}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col4:
+        st.markdown(
+            f"""
+            <div class="link-card">
+                <div class="info-card-title">Official Apply Link</div>
+                <div class="info-card-value">{apply_link}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+# =========================================================
+# GEMINI
+# =========================================================
 @st.cache_resource
 def get_gemini_model():
     api_key = st.secrets.get("GEMINI_API_KEY", "").strip()
@@ -262,7 +360,6 @@ def get_gemini_model():
         st.error("No Gemini API key found.")
         return None
 
-    st.write("Key loaded:", api_key[:6], "...", api_key[-4:])  # temporary debug
     genai.configure(api_key=api_key)
     return genai.GenerativeModel("gemini-2.5-flash")
 
@@ -520,29 +617,31 @@ STRICT RULES:
 - Do NOT guess or invent.
 - Keep answer SHORT, CLEAR, and EASY.
 - Use simple English.
-- Each label must be on a separate line.
-- Each value must start on the next line.
+- VERY IMPORTANT:
+  - Each label MUST be on a new line
+  - Each value MUST be on the next line
+  - Do NOT write everything in one paragraph
+  - Follow exact line-by-line format strictly
 - Description must include amount if it is available in the evidence.
 - If something is missing, write: Not clearly available.
--Give in news lines. Each sub heading should be in new line Ex- in 1st line Scheme name , in 2nd line Description etc.
 
 Return exactly in this structure:
 
 Scheme Name:
 <answer>
-next line
+
 Description:
 <what the scheme is and amount if available>
-next line
+
 Who can apply:
 <answer>
-next lines
+
 How to apply:
 <answer>
-next line
+
 Official Notice Link:
 <link or Not clearly available>
-next line
+
 Official Apply Link:
 <link or Not clearly available>
 
@@ -590,29 +689,31 @@ STRICT RULES:
 - Do NOT guess beyond the given data.
 - Keep answer SHORT, CLEAR, and EASY.
 - Use simple English.
-- Each label must be on a separate line.
-- Each value must start on the next line.
+- VERY IMPORTANT:
+  - Each label MUST be on a new line
+  - Each value MUST be on the next line
+  - Do NOT write everything in one paragraph
+  - Follow exact line-by-line format strictly
 - Description must include amount if it is visible in the search results.
 - If unsure, write: Not clearly available
--Give in news lines. Each sub heading should be in new line Ex- in 1st line Scheme name , in 2nd line Description etc.
 
 Return exactly in this structure:
 
 Scheme Name:
 <best matching scheme name>
-next line
+
 Description:
 <what the scheme is and amount if available>
-next line
+
 Who can apply:
 <answer>
-next line
+
 How to apply:
 <answer>
-next line
+
 Official Notice Link:
 <link or Not clearly available>
-next line
+
 Official Apply Link:
 <link or Not clearly available>
 
@@ -636,13 +737,179 @@ Search Results:
 # =========================================================
 # UI
 # =========================================================
-st.set_page_config(page_title="Govt Scheme Advisor", layout="wide")
-st.title("🇮🇳 Govt Scheme Advisor")
-st.caption("Uses local PDFs first. If the selected state is not found in local data, it checks official government sources.")
+st.set_page_config(
+    page_title="Govt Scheme Advisor",
+    page_icon="🇮🇳",
+    layout="wide"
+)
 
-st.subheader("Profile")
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #f6f8fb;
+    }
+
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #0f172a, #1e3a8a);
+        color: white;
+        padding: 28px 32px;
+        border-radius: 22px;
+        margin-bottom: 22px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+    }
+
+    .hero-title {
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .hero-subtitle {
+        font-size: 15px;
+        line-height: 1.7;
+        opacity: 0.95;
+    }
+
+    .section-heading {
+        font-size: 13px;
+        font-weight: 800;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-top: 8px;
+        margin-bottom: 10px;
+    }
+
+    .panel-box {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px;
+        margin-bottom: 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .tip-text {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 8px;
+        line-height: 1.6;
+    }
+
+    .result-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 22px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .result-badge {
+        display: inline-block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 10px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+    }
+
+    .result-title {
+        font-size: 27px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 12px;
+        line-height: 1.3;
+    }
+
+    .result-description {
+        font-size: 15px;
+        color: #374151;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .info-card, .link-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        min-height: 180px;
+    }
+
+    .info-card-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 10px;
+    }
+
+    .info-card-value {
+        font-size: 15px;
+        color: #111827;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .stButton > button {
+        height: 48px;
+        border-radius: 14px;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        border: none;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stNumberInput"] input {
+        border-radius: 12px !important;
+    }
+
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] {
+        border-radius: 12px !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="hero-section">
+        <div class="hero-title">🇮🇳 Govt Scheme Advisor</div>
+        <div class="hero-subtitle">
+            Discover relevant government schemes using local PDF evidence first,
+            then official government sources when required.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown('<div class="section-heading">Applicant Profile</div>', unsafe_allow_html=True)
+st.markdown('<div class="panel-box">', unsafe_allow_html=True)
+
 c1, c2, c3, c4 = st.columns(4)
-
 default_state_index = INDIAN_STATES.index("Telangana") if "Telangana" in INDIAN_STATES else 0
 
 with c1:
@@ -654,7 +921,7 @@ with c3:
 with c4:
     category = st.selectbox("Category", ["General", "EWS", "OBC/BC", "SC", "ST", "Minority"])
 
-d1, d2 = st.columns([1, 1])
+d1, d2 = st.columns(2)
 
 with d1:
     scheme_type = st.selectbox("Scheme Type", SCHEME_OPTIONS, index=0)
@@ -663,16 +930,29 @@ with d2:
     language = st.selectbox("Language", ["English", "Telugu"])
 
 extra_text = st.text_input(
-    "Additional details (optional)",
-    placeholder="Example: pre matric, girls, disabled, widow, hostel, loan subsidy",
+    "Additional details",
+    placeholder="Example: widow, hostel, pre matric, disability, girls, minority",
 )
+
+st.markdown(
+    '<div class="tip-text">Add a few specific details to improve scheme matching quality.</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="section-heading">Actions</div>', unsafe_allow_html=True)
+st.markdown('<div class="panel-box">', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    search_btn = st.button("Search Schemes", type="primary")
+    search_btn = st.button("Search Schemes", type="primary", use_container_width=True)
+
 with col2:
-    build_btn = st.button("Build / Rebuild Local PDF Store")
+    build_btn = st.button("Build / Refresh Local PDF Store", use_container_width=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 if build_btn:
     try:
@@ -719,13 +999,11 @@ if search_btn:
                 verified_links=matched_links,
             )
 
-        st.subheader("Answer")
-        formatted = format_output(answer)
-        formatted = make_links_clickable(formatted)
-        st.markdown(formatted)
+        st.markdown('<div class="section-heading">Search Result</div>', unsafe_allow_html=True)
+        render_answer_card(answer)
 
         if matched_links:
-            st.subheader("Official Links")
+            st.markdown('<div class="section-heading">Official Links</div>', unsafe_allow_html=True)
             for item in matched_links:
                 st.markdown(f"**{item.get('scheme_name', 'Scheme')}**")
                 if item.get("apply_link"):
@@ -735,7 +1013,7 @@ if search_btn:
                 if item.get("office_note"):
                     st.info(item["office_note"])
 
-        with st.expander("Evidence used"):
+        with st.expander("Evidence Used"):
             for e in evidence:
                 st.markdown(
                     f"**{e['file_name']} | page {e['page_no']} | score {e['score']:.3f}**"
@@ -761,12 +1039,10 @@ if search_btn:
                     fallback_results=fallback_results,
                 )
 
-            st.subheader("Answer")
-            formatted = format_output(answer)
-            formatted = make_links_clickable(formatted)
-            st.markdown(formatted)
+            st.markdown('<div class="section-heading">Search Result</div>', unsafe_allow_html=True)
+            render_answer_card(answer)
 
-            st.subheader("Useful Official Links")
+            st.markdown('<div class="section-heading">Useful Official Links</div>', unsafe_allow_html=True)
             for item in fallback_results:
                 st.markdown(f"**{item.get('scheme_name', 'Possible Scheme')}**")
                 if item.get("source_url"):
