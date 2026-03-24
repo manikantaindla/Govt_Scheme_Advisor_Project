@@ -251,15 +251,23 @@ def make_links_clickable(text: str) -> str:
     return re.sub(url_pattern, repl, text)
 
 
-# =========================================================
-# GEMINI
-# =========================================================
 @st.cache_resource
 def get_gemini_model():
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    # 1. Try Streamlit secrets (for deployment)
+    api_key = st.secrets.get("GEMINI_API_KEY", "")
+
+    # 2. Fallback to environment (for local .env)
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY", "")
+
+    # 3. Optional: UI input (for testing)
+    if not api_key:
+        api_key = st.text_input("Enter Gemini API Key", type="password")
+
     if not api_key:
         return None
-    genai.configure(api_key=api_key)
+
+    genai.configure(api_key=api_key.strip())
     return genai.GenerativeModel("gemini-2.5-flash")
 
 
