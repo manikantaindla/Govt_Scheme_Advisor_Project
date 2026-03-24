@@ -238,13 +238,21 @@ def make_links_clickable(text: str) -> str:
     if not text:
         return ""
 
-    url_pattern = r"(https?://[^\s\]\)]+)"
+    url_pattern = r"(https?://[^\s<>\]\)]+)"
 
     def repl(match):
         url = match.group(1).rstrip(".,;)")
-        return f"[{url}]({url})"
+        return f'<a href="{url}" target="_blank">{url}</a>'
 
     return re.sub(url_pattern, repl, text)
+
+
+def format_html_text(text: str) -> str:
+    if not text:
+        return "Not clearly available"
+    text = text.replace("\n", "<br>")
+    text = make_links_clickable(text)
+    return text
 
 
 def parse_answer_sections(text: str) -> Dict[str, str]:
@@ -280,18 +288,18 @@ def render_answer_card(answer_text: str):
     sections = parse_answer_sections(answer_text)
 
     scheme_name = sections.get("Scheme Name", "Not clearly available")
-    description = sections.get("Description", "Not clearly available")
-    who_can_apply = sections.get("Who can apply", "Not clearly available")
-    how_to_apply = sections.get("How to apply", "Not clearly available")
-    notice_link = make_links_clickable(sections.get("Official Notice Link", "Not clearly available"))
-    apply_link = make_links_clickable(sections.get("Official Apply Link", "Not clearly available"))
+    description = format_html_text(sections.get("Description", "Not clearly available"))
+    who_can_apply = format_html_text(sections.get("Who can apply", "Not clearly available"))
+    how_to_apply = format_html_text(sections.get("How to apply", "Not clearly available"))
+    notice_link = format_html_text(sections.get("Official Notice Link", "Not clearly available"))
+    apply_link = format_html_text(sections.get("Official Apply Link", "Not clearly available"))
 
     st.markdown(
         f"""
         <div class="result-card">
             <div class="result-badge">Scheme Result</div>
             <div class="result-title">{scheme_name}</div>
-            <div class="result-description">{make_links_clickable(description)}</div>
+            <div class="result-description">{description}</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -315,7 +323,7 @@ def render_answer_card(answer_text: str):
             f"""
             <div class="info-card">
                 <div class="info-card-title">How to apply</div>
-                <div class="info-card-value">{make_links_clickable(how_to_apply)}</div>
+                <div class="info-card-value">{how_to_apply}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -747,7 +755,8 @@ st.markdown(
     """
     <style>
     .stApp {
-        background-color: #f6f8fb;
+        background: linear-gradient(180deg, #0b1220 0%, #111827 100%);
+        color: #e5e7eb;
     }
 
     .block-container {
@@ -757,12 +766,13 @@ st.markdown(
     }
 
     .hero-section {
-        background: linear-gradient(135deg, #0f172a, #1e3a8a);
+        background: linear-gradient(135deg, #111827, #1d4ed8);
         color: white;
-        padding: 28px 32px;
+        padding: 30px 34px;
         border-radius: 22px;
         margin-bottom: 22px;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255,255,255,0.08);
     }
 
     .hero-title {
@@ -774,13 +784,13 @@ st.markdown(
     .hero-subtitle {
         font-size: 15px;
         line-height: 1.7;
-        opacity: 0.95;
+        color: rgba(255,255,255,0.92);
     }
 
     .section-heading {
         font-size: 13px;
         font-weight: 800;
-        color: #2563eb;
+        color: #60a5fa;
         text-transform: uppercase;
         letter-spacing: 0.8px;
         margin-top: 8px;
@@ -788,71 +798,72 @@ st.markdown(
     }
 
     .panel-box {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #111827;
+        border: 1px solid #1f2937;
         border-radius: 18px;
         padding: 18px;
         margin-bottom: 18px;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
     }
 
     .tip-text {
         font-size: 13px;
-        color: #6b7280;
+        color: #9ca3af;
         margin-top: 8px;
         line-height: 1.6;
     }
 
     .result-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #111827;
+        border: 1px solid #1f2937;
         border-radius: 20px;
         padding: 22px;
         margin-bottom: 16px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
     }
 
     .result-badge {
         display: inline-block;
-        background: #eff6ff;
-        color: #1d4ed8;
+        background: rgba(37, 99, 235, 0.16);
+        color: #93c5fd;
         font-size: 12px;
         font-weight: 700;
         padding: 6px 10px;
         border-radius: 999px;
         margin-bottom: 12px;
+        border: 1px solid rgba(96, 165, 250, 0.18);
     }
 
     .result-title {
         font-size: 27px;
         font-weight: 800;
-        color: #111827;
+        color: #f9fafb;
         margin-bottom: 12px;
         line-height: 1.3;
     }
 
     .result-description {
         font-size: 15px;
-        color: #374151;
+        color: #d1d5db;
         line-height: 1.8;
-        white-space: pre-wrap;
+        white-space: normal;
         word-break: break-word;
     }
 
     .info-card, .link-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: #111827;
+        border: 1px solid #1f2937;
         border-radius: 18px;
         padding: 18px;
         margin-bottom: 14px;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
         min-height: 180px;
     }
 
     .info-card-title {
         font-size: 13px;
         font-weight: 800;
-        color: #2563eb;
+        color: #60a5fa;
         text-transform: uppercase;
         letter-spacing: 0.8px;
         margin-bottom: 10px;
@@ -860,10 +871,23 @@ st.markdown(
 
     .info-card-value {
         font-size: 15px;
-        color: #111827;
+        color: #e5e7eb;
         line-height: 1.8;
-        white-space: pre-wrap;
+        white-space: normal;
         word-break: break-word;
+    }
+
+    .info-card-value a,
+    .result-description a {
+        color: #93c5fd !important;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .info-card-value a:hover,
+    .result-description a:hover {
+        color: #bfdbfe !important;
+        text-decoration: underline;
     }
 
     .stButton > button {
@@ -877,16 +901,51 @@ st.markdown(
         background: linear-gradient(135deg, #2563eb, #1d4ed8);
         color: white;
         border: none;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+    }
+
+    .stButton > button:not([kind="primary"]) {
+        background: #1f2937;
+        color: #e5e7eb;
+        border: 1px solid #374151;
+    }
+
+    .stTextInput label,
+    .stNumberInput label,
+    .stSelectbox label {
+        color: #d1d5db !important;
+        font-weight: 600;
     }
 
     div[data-testid="stTextInput"] input,
     div[data-testid="stNumberInput"] input {
         border-radius: 12px !important;
+        background-color: #0f172a !important;
+        color: #f9fafb !important;
+        border: 1px solid #374151 !important;
     }
 
     div[data-testid="stSelectbox"] div[data-baseweb="select"] {
         border-radius: 12px !important;
+        background-color: #0f172a !important;
+        color: #f9fafb !important;
+        border: 1px solid #374151 !important;
+    }
+
+    div[data-testid="stExpander"] {
+        background: #111827 !important;
+        border: 1px solid #1f2937 !important;
+        border-radius: 16px !important;
+        overflow: hidden;
+    }
+
+    div[data-testid="stExpander"] summary {
+        color: #e5e7eb !important;
+        font-weight: 700;
+    }
+
+    [data-testid="stAlert"] {
+        border-radius: 14px;
     }
     </style>
     """,
@@ -896,7 +955,7 @@ st.markdown(
 st.markdown(
     """
     <div class="hero-section">
-        <div class="hero-title">🇮🇳 Govt Scheme Advisor</div>
+        <div class="hero-title">Govt Scheme Advisor</div>
         <div class="hero-subtitle">
             Discover relevant government schemes using local PDF evidence first,
             then official government sources when required.
